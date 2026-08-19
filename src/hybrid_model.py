@@ -125,11 +125,12 @@ def create_model():
     print("\nCreating Logistic Regression...")
 
     return LogisticRegression(
-        max_iter=100,
+        max_iter=1000,
         class_weight="balanced",
-        C=2.0,
-        solver="liblinear",
-        random_state=RANDOM_STATE
+        C=4.0,
+        solver="saga",
+        random_state=RANDOM_STATE,
+        n_jobs=-1
     )
 
 # Eval
