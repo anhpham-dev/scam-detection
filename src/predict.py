@@ -20,9 +20,10 @@ MODEL_PATH = (
 
 print("Loading model...")
 
-model = joblib.load(
-    MODEL_PATH
-)
+model = joblib.load(MODEL_PATH)
+if not hasattr(model, "multi_class"):
+    model.multi_class = "auto"
+
 
 print("Model loaded.")
 

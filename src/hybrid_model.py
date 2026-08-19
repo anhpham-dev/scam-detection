@@ -129,8 +129,7 @@ def create_model():
         class_weight="balanced",
         C=4.0,
         solver="saga",
-        random_state=RANDOM_STATE,
-        n_jobs=-1
+        random_state=RANDOM_STATE
     )
 
 # Eval

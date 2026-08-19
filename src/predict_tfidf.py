@@ -28,6 +28,8 @@ print("Loading TF-IDF vectorizer...")
 vectorizer = joblib.load(VECTORIZER_PATH)
 print("Loading classifier...")
 model = joblib.load(MODEL_PATH)
+if not hasattr(model, "multi_class"):
+    model.multi_class = "auto"
 print("Model loaded.")
 
 # predict

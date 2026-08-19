@@ -32,6 +32,8 @@ vectorizer = joblib.load(VECTORIZER_PATH)
 
 print("Loading classifier...")
 model = joblib.load(MODEL_PATH)
+if not hasattr(model, "multi_class"):
+    model.multi_class = "auto"
 
 print("Model loaded.")
 
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     while True:
         url = input("Enter URL (type 'exit' to quit): ")
 
-        if url.lower == "quit":
+        if url.lower == "exit":
             break
 
         if not url.strip():
