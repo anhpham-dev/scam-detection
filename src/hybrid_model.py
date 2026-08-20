@@ -60,7 +60,7 @@ EXPERIMENTS = [
     ("tfidf_all_minus_redundant", FEATURE_GROUPS["all_minus_redundant"]),
 ]
 
-PROMOTE_BEST = True
+PROMOTE_BEST = False
 
 MAX_ROWS = None
 
