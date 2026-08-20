@@ -134,6 +134,7 @@ def create_vectorizer():
     return TfidfVectorizer(
         analyzer="char",
         ngram_range=(3,5),
+        max_features=500_000,
         min_df=2,
         max_df=.95,
         sublinear_tf=True,
@@ -149,7 +150,7 @@ def create_model():
         max_iter=1000,
         class_weight="balanced",
         C=4.0,
-        solver="saga",
+        solver="liblinear",
         random_state=RANDOM_STATE
     )
 
@@ -230,6 +231,19 @@ def main():
     print(f"Testing: {X_tfidf_test.shape}")
     print(f"Vocabulary: {len(vectorizer.vocabulary_):,}")
 
+    # Extract handcrafted features once and reuse across experiments
+    print("\nExtracting handcrafted features...")
+
+    feature_start_time = time.time()
+    feature_train_full = extract_feature_dataframe(url_train)
+    feature_test_full = extract_feature_dataframe(url_test)
+
+    print(f"Handcrafted features finished in {time.time() - feature_start_time:.2f} seconds")
+
+    print("\nHandcrafted feature matrix:")
+    print(f"Training: {feature_train_full.shape}")
+    print(f"Testing: {feature_test_full.shape}")
+
     # Run experiments
     results = []
 
@@ -247,11 +261,11 @@ def main():
             print("\nFeatures:")
             print(feature_columns)
 
-            print("\nExtracting training features...")
-            X_feature_train = extract_feature_dataframe(url_train, columns=feature_columns)
+            print("\nSelecting training features...")
+            X_feature_train = feature_train_full[list(feature_columns)]
 
-            print("Extracting test features...")
-            X_feature_test = extract_feature_dataframe(url_test, columns=feature_columns)
+            print("Selecting test features...")
+            X_feature_test = feature_test_full[list(feature_columns)]
 
             print(f"\nHandcrafted feature count: {X_feature_train.shape[1]}")
 
