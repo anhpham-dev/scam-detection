@@ -10,6 +10,7 @@ from scipy.sparse import hstack, csr_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 
 from sklearn.metrics import (
     classification_report,
@@ -20,7 +21,8 @@ from sklearn.metrics import (
 
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from features import normalize_url, extract_feature_dataframe
+from features import normalize_url, extract_feature_dataframe, FEATURE_GROUPS
+import shutil
 
 # Configuration
 DATASET_DIR = (
@@ -49,10 +51,29 @@ VECTORIZER_PATH = (
     / "url_hybrid_tfidf.pkl"
 )
 
+EXPERIMENTS = [
+    ("tfidf_only", []),
+    ("tfidf_length", FEATURE_GROUPS["length"]),
+    ("tfidf_structural", FEATURE_GROUPS["structural"]),
+    ("tfidf_suspicious", FEATURE_GROUPS["suspicious"]),
+    ("tfidf_all", FEATURE_GROUPS["all"]),
+    ("tfidf_all_minus_redundant", FEATURE_GROUPS["all_minus_redundant"]),
+]
+
+PROMOTE_BEST = True
+
 MAX_ROWS = None
 
 TEST_SIZE = 0.20
 RANDOM_STATE = 42
+
+def variant_paths(variant):
+    suffix = "" if variant == "default" else f"_{variant}"
+    return {
+        "model": MODEL_DIR / f"url_hybrid_classifier{suffix}.pkl", 
+        "vectorizer": MODEL_DIR / f"url_hybrid_tfidf{suffix}.pkl",
+        "scaler": MODEL_DIR / f"url_hybrid_scaler{suffix}.pkl"
+    }
 
 # Find csv
 def find_csv():
@@ -145,6 +166,7 @@ def evaluate_model(model, X_test, y_test):
     print(f"\nAccuracy: {accuracy:.4f}")
     print(f"Macro F1: {macro_f1:.4f}")
     print(f"Weighted F1: {weighted_f1:.4f}")
+
     print("\nClassification Report:")
     print(classification_report(y_test, predictions, digits=4))
 
@@ -155,15 +177,23 @@ def evaluate_model(model, X_test, y_test):
     print("\nconfusion Matrix:")
     print(matrix_df)
 
+    return {"accuracy": accuracy, "macro_f1": macro_f1, "weighted_f1": weighted_f1}
+
 # Save
-def save_model(model, vectorizer):
+def save_model(model, vectorizer, scaler, variant):
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    paths = variant_paths(variant)
 
-    joblib.dump(model, MODEL_PATH)
-    joblib.dump(vectorizer, VECTORIZER_PATH)
+    joblib.dump(model, paths["model"])
+    joblib.dump(vectorizer, paths["vectorizer"])
 
-    print(f"\nClassifier saved to {MODEL_PATH}")
-    print(f"\nVectorizer saved to {VECTORIZER_PATH}")
+    if scaler is not None:
+        joblib.dump(scaler, paths["scaler"])
+
+    print(f"\nClassifier saved to {paths['model']}")
+    print(f"\nVectorizer saved to {paths['vectorizer']}")
+    if scaler is not None:
+        print(f"\nScaler saved to {paths['scaler']}")
 
 # Main
 def main():
@@ -192,6 +222,7 @@ def main():
     start_time = time.time()
     X_tfidf_train = vectorizer.fit_transform(url_train)
     X_tfidf_test = vectorizer.transform(url_test)
+
     print(f"TF-IDF finished in {time.time() - start_time:.2f} seconds")
 
     print("\nTF-IDF matrix:")
@@ -199,46 +230,131 @@ def main():
     print(f"Testing: {X_tfidf_test.shape}")
     print(f"Vocabulary: {len(vectorizer.vocabulary_):,}")
 
-    # Hand crafted features
-    print("\nExtracting handcrafted features...")
-    X_features_train = extract_feature_dataframe(url_train)
-    X_features_test = extract_feature_dataframe(url_test)
+    # Run experiments
+    results = []
 
-    print(f"Handcrafted features: {X_features_train.shape[1]}")
+    for name, feature_columns in EXPERIMENTS:
+        print(f"==============================\nExperiment: {name}\n==============================")
+        scaler = None
 
-    # Convert to sparse
-    X_features_train = csr_matrix(X_features_train.astype("float32").values)
-    X_features_test = csr_matrix(X_features_test.astype("float32").values)
+        if not feature_columns:
+            print("\nUsing TF-IDF only")
 
-    # Combine
-    print("\nCombining TF-IDF + handcrafted features...")
+            X_train = X_tfidf_train
+            X_test = X_tfidf_test
 
-    X_train = hstack([X_tfidf_train, X_features_train], format="csr")
-    X_test = hstack([X_tfidf_test, X_features_test], format="csr")
+        else:
+            print("\nFeatures:")
+            print(feature_columns)
 
-    print(f"Hybrid training matrix: {X_train.shape}")
-    print(f"Hybrid testing matrix: {X_test.shape}")
+            print("\nExtracting training features...")
+            X_feature_train = extract_feature_dataframe(url_train, columns=feature_columns)
 
-    # Train
-    model = create_model()
+            print("Extracting test features...")
+            X_feature_test = extract_feature_dataframe(url_test, columns=feature_columns)
 
-    print("\nTraining hybrid model...")
+            print(f"\nHandcrafted feature count: {X_feature_train.shape[1]}")
 
-    start_time = time.time()
-    model.fit(X_train, y_train)
+            # Handcrafted features
+            print("\nFitting StandardScaler...")
+            scaler = StandardScaler()
 
-    print(f"\nTraining finished in {time.time() - start_time:.2f}")
+            # Fit on DataFrame (not .values) to preserve feature_names_in_
+            scaler.fit(X_feature_train)
 
-    print("\nModel classes:")
-    print(model.classes_)
+            X_feature_train = scaler.transform(X_feature_train).astype("float32")
+            X_feature_test = scaler.transform(X_feature_test).astype("float32")
 
-    # Eval
-    evaluate_model(model, X_test, y_test)
+            # Convert to sparse
+            X_feature_train = csr_matrix(X_feature_train)
+            X_feature_test = csr_matrix(X_feature_test)
 
-    # Save
-    save_model(model, vectorizer)
+            # Combine TF-IDF + Handcrafted features
+            print("\nCombining TF-IDF + handcrafted features...")
+            X_train = hstack(
+                [
+                    X_tfidf_train,
+                    X_feature_train
+                ],
+                format="csr"
+            )
 
-    print("\nHybrid Training completed.")
+            X_test = hstack([
+                X_tfidf_test,
+                X_feature_test
+            ], format="csr")
+
+        # Train
+        print("\nTraining model...")
+
+        model = create_model()
+        start_time = time.time()
+
+        model.fit(X_train, y_train)
+
+        training_time = time.time() - start_time
+
+        print(f"Training finished in {training_time:.2f} seconds")
+        print("\nModel classes:")
+        print(model.classes_)
+
+        # Evaluate
+        metrics = evaluate_model(model, X_test, y_test)
+
+        results.append({
+            "experiment": name,
+            "accuracy": metrics["accuracy"],
+            "macro_f1": metrics["macro_f1"],
+            "weighted_f1": metrics["weighted_f1"],
+            "training_time": training_time
+        })
+
+        # Save
+        save_model(model, vectorizer, scaler, name)
+
+    # Experiment summary
+    results_df = pd.DataFrame(results)
+    print("==============================\nExperiment Summary\n==============================")
+    print(results_df.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
+
+    # Save experiment results
+    results_path = MODEL_DIR / "experiment_results.csv"
+
+    results_df.to_csv(results_path, index=False)
+
+    print(f"\nExperiment results saved to: {results_path}")
+
+    # Find best experiment
+    best_index = results_df["macro_f1"].idxmax()
+    best_result = results_df.loc[best_index]
+
+    print("==============================\nBest Experiment\n==============================")
+    print(f"Experiment: {best_result['experiment']}")
+    print(f"Accuracy: {best_result['accuracy']}")
+    print(f"Macro F1: {best_result['macro_f1']}")
+    print(f"Weighted F1: {best_result['weighted_f1']}")
+
+    # Promote best hybrid variant to canonical paths
+    if PROMOTE_BEST:
+        hybrids = results_df[results_df["experiment"] != "tfidf_only"]
+
+        if not hybrids.empty:
+            best_hybrid = hybrids.loc[hybrids["macro_f1"].idxmax(), "experiment"]
+
+            print("==============================\nPromoting Best Hybrid\n==============================")
+            print(f"Variant: {best_hybrid}")
+
+            for key in ("model", "vectorizer", "scaler"):
+                src = variant_paths(best_hybrid)[key]
+                dst = variant_paths("default")[key]
+
+                if src.exists():
+                    shutil.copyfile(src, dst)
+                    print(f"Promoted {key} -> {dst}")
+                else:
+                    print(f"Skipped {key}: source not found {src}")
+
+    print("\nAll experiments completed.")
 
 if __name__ == "__main__":
     main()

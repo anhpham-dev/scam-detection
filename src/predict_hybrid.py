@@ -22,6 +22,12 @@ VECTORIZER_PATH = (
     / "url_hybrid_tfidf.pkl"
 )
 
+SCALER_PATH = (
+    PROJECT_DIR
+    / "models"
+    / "url_hybrid_scaler.pkl"
+)
+
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from features import normalize_url, extract_feature_dataframe
@@ -29,6 +35,9 @@ from features import normalize_url, extract_feature_dataframe
 print("Loading TF-IDF vectorizer...")
 
 vectorizer = joblib.load(VECTORIZER_PATH)
+
+print("Loading scaler...")
+scaler = joblib.load(SCALER_PATH)
 
 print("Loading classifier...")
 model = joblib.load(MODEL_PATH)
@@ -43,9 +52,11 @@ def predict_url(url):
     # TF-IDF
     X_tfidf = vectorizer.transform([url])
 
-    # Handcrafted features
-    X_features = extract_feature_dataframe([url])
-    X_features = csr_matrix(X_features.astype("float32").values)
+    # Handcrafted features (match training column order via the scaler)
+    feature_columns = getattr(scaler, "feature_names_in_", None)
+    X_features = extract_feature_dataframe([url], columns=feature_columns)
+    X_features = scaler.transform(X_features)
+    X_features = csr_matrix(X_features.astype("float32"))
     X = hstack([X_tfidf, X_features], format="csr")
 
     prediction = model.predict(X)[0]

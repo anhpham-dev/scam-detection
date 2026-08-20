@@ -136,12 +136,46 @@ def extract_features(url):
 
     return features
 
-def extract_feature_dataframe(urls):
+FEATURE_GROUPS = {
+    "length": [
+        "url_length",
+        "hostname_length",
+        "path_length",
+        "query_length"
+    ],
+    "structural": [
+        "num_dots", "num_slashes", "num_hyphens", "num_underscores",
+        "num_digits", "num_special_chars", "num_at", "num_question",
+        "num_equal", "num_ampersand", "num_percent", "num_colons",
+        "num_semicolons", "has_https", "has_ip", "num_subdomains",
+        "has_double_slash", "has_encoded_characters", "has_port",
+    ],
+    "suspicious": [
+        "has_suspicious_word",
+        "num_suspicious_words",
+    ],
+    "redundant": [
+        "has_suspicious_word",
+        "has_encoded_characters"
+    ]
+}
+
+FEATURE_GROUPS["all"] = list(extract_features("http://x").keys())
+FEATURE_GROUPS["all_minus_redundant"] = [
+    col for col in FEATURE_GROUPS["all"] if col not in set(FEATURE_GROUPS["redundant"])
+]
+
+def extract_feature_dataframe(urls, columns=None):
     "Convert a pandas Series/list of URL into a pandas DataFrame of numerical features"
     import pandas as pd
 
     feature_rows = [
         extract_features(url) for url in urls
     ]
+    df = pd.DataFrame(feature_rows)
 
-    return pd.DataFrame(feature_rows)
+    if columns is not None:
+        df = df[list(columns)]
+
+    return df
+    # return pd.DataFrame(feature_rows)
