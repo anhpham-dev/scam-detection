@@ -20,5 +20,3 @@ for url in TEST_URLS:
     print(f"====================\nURL: {url}")
     for key, value in features.items():
         print(f"  {key:<28} {value}")
-
-        
