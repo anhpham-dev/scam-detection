@@ -66,7 +66,7 @@ if __name__ == "__main__":
     while True:
         url = input("Enter URL (type 'exit' to quit): ")
 
-        if url.lower == "exit":
+        if url.lower() == "exit":
             break
 
         if not url.strip():
