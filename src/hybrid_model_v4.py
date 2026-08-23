@@ -141,7 +141,7 @@ def main():
         print(f"Training finished in {training_time:.2f} seconds")
         print(model.classes_)
 
-        metrics = evaluate_model(model, vectorizer, scaler, name)
+        metrics = evaluate_model(model, X_test, y_test)
 
         results.append({
             "experiment": name,
