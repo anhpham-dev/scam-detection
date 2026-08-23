@@ -29,9 +29,9 @@ EXPERIMENTS = [
 def variant_paths(variant):
     suffix = "" if variant == "default" else f"_{variant}"
     return {
-        "model": MODEL_DIR / f"url_hybrid_v4_classier{suffix}.pkl",
+        "model": MODEL_DIR / f"url_hybrid_v4_classifier{suffix}.pkl",
         "vectorizer": MODEL_DIR / f"url_hybrid_v4_tfidf{suffix}.pkl",
-        "scalar": MODEL_DIR / f"url_hybrid_v4_scaler{suffix}.pkl",
+        "scaler": MODEL_DIR / f"url_hybrid_v4_scaler{suffix}.pkl",
     }
 
 def save_model(model, vectorizer, scaler, variant):
