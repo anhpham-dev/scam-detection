@@ -133,7 +133,7 @@ def create_vectorizer():
 
     return TfidfVectorizer(
         analyzer="char",
-        ngram_range=(3,5),
+        ngram_range=(2,4),
         max_features=500_000,
         min_df=2,
         max_df=.95,
@@ -150,8 +150,9 @@ def create_model():
         max_iter=1000,
         class_weight="balanced",
         C=4.0,
-        solver="liblinear",
-        random_state=RANDOM_STATE
+        solver="lbfgs",
+        random_state=RANDOM_STATE,
+        n_jobs=-1
     )
 
 # Eval

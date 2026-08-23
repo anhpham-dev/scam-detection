@@ -151,7 +151,8 @@ def create_vectorizer():
 
     vectorizer = TfidfVectorizer(
         analyzer="char",
-        ngram_range=(3, 5), # char sequence
+        ngram_range=(2, 4), # char sequence
+        max_features=500_000,
         min_df=2, #ignore extremely rare one
         max_df=.95, # remove extremely common patterns
         sublinear_tf=True, # limit mem usage
@@ -168,8 +169,9 @@ def train_model(X_train, y_train):
         max_iter=1000,
         class_weight="balanced",
         C=4.0,
-        solver="liblinear",
-        random_state=RANDOM_STATE
+        solver="lbfgs",
+        random_state=RANDOM_STATE,
+        n_jobs=-1
     )
 
     print("\nTraining model...")

@@ -14,7 +14,7 @@ sys.path.append(str(Path(__file__).resolve().parent))
 
 from hybrid_model import MODEL_DIR, RANDOM_STATE, TEST_SIZE, clean_dataset, create_model, create_vectorizer, evaluate_model, load_dataset
 from features import FEATURE_GROUPS, extract_feature_dataframe
-from domain_features import DOMAIN_FEATURE_GROUPS, extract_domain_features
+from domain_features import DOMAIN_FEATURE_GROUPS, extract_domain_feature_dataframe
 
 V3_FEATURES = FEATURE_GROUPS["all_minus_redundant"]
 V4_FEATURES = DOMAIN_FEATURE_GROUPS["all"]
@@ -84,8 +84,8 @@ def main():
     # V4 domain features
     print("\nExtracting V4 domain features...")
     start_time = time.time()
-    v4_train_full = extract_feature_dataframe(url_train)
-    v4_test_full = extract_feature_dataframe(url_test)
+    v4_train_full = extract_domain_feature_dataframe(url_train)
+    v4_test_full = extract_domain_feature_dataframe(url_test)
     print(f"V4 features finished in {time.time() - start_time:.2f} seconds")
     print(f"Training: {v4_train_full.shape}\nTesting: {v4_test_full.shape}")
 
