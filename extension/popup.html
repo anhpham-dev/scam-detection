@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scam Detector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <main class="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 3L19 6V11.5C19 16.2 16.1 20.1 12 21C7.9 20.1 5 16.2 5 11.5V6L12 3Z"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M9 12L11 14L15 10"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <div>
+          <h1>Scam Detector</h1>
+          <span class="subtitle">ML-powered URL security</span>
+        </div>
+      </div>
+
+      <div class="status">
+        <span class="status-dot"></span>
+        <span>Local</span>
+      </div>
+    </header>
+
+    <!-- Loading -->
+    <section id="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Analyzing website...</p>
+      <span>Checking URL characteristics</span>
+    </section>
+
+    <!-- Result -->
+    <section id="result" class="result hidden">
+
+      <!-- URL -->
+      <div class="url-card">
+        <div class="section-label">
+          <span class="label-icon">↗</span>
+          CURRENT URL
+        </div>
+
+        <div id="url" class="url">
+          —
+        </div>
+      </div>
+
+      <!-- Risk Score -->
+      <div class="risk-card">
+
+        <div class="risk-header">
+          <span class="section-label">RISK SCORE</span>
+          <span id="risk-mini-label" class="risk-mini-label">—</span>
+        </div>
+
+        <div class="risk-score-container">
+
+          <div class="gauge-wrapper">
+            <svg class="gauge" viewBox="0 0 160 160">
+
+              <circle
+                class="gauge-track"
+                cx="80"
+                cy="80"
+                r="62"
+              />
+
+              <circle
+                id="gauge-fill"
+                class="gauge-progress"
+                cx="80"
+                cy="80"
+                r="62"
+              />
+
+            </svg>
+
+            <div class="gauge-center">
+              <span id="gauge-text">0%</span>
+              <small>risk</small>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="risk-badge" class="risk-badge">
+          <span>Analyzing</span>
+        </div>
+
+      </div>
+
+      <!-- Main stats -->
+      <div class="stats">
+
+        <div class="stat-card">
+          <span class="stat-label">Prediction</span>
+          <span id="prediction" class="stat-value">—</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Confidence</span>
+          <span id="confidence" class="stat-value">—</span>
+        </div>
+
+      </div>
+
+      <!-- Probabilities -->
+      <div class="probability-card">
+
+        <div class="probability-header">
+          <div>
+            <span class="section-label">CLASS PROBABILITIES</span>
+            <p>Model classification breakdown</p>
+          </div>
+        </div>
+
+        <div id="prob-bars" class="prob-bars"></div>
+
+      </div>
+
+    </section>
+
+    <!-- Error -->
+    <section id="error" class="error-state hidden">
+
+      <div class="error-icon">
+        !
+      </div>
+
+      <h2>Analysis failed</h2>
+
+      <p id="error-msg">
+        Unable to connect to the local API.
+      </p>
+
+      <div class="error-hint">
+        Make sure your FastAPI server is running on
+        <code>localhost:8000</code>.
+      </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <button id="reanalyze" class="reanalyze-btn">
+
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M20 11A8.1 8.1 0 0 0 5.4 6.4L4 8"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M4 4V8H8"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M4 13A8.1 8.1 0 0 0 18.6 17.6L20 16"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M20 20V16H16"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+        Re-analyze
+
+      </button>
+
+      <span class="version">v1.0.0</span>
+    </footer>
+
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

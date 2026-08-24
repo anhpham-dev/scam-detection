@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Scam Detector</h1>
+    </header>
+
+    <div id="loading" class="loading">Analyzing URL...</div>
+
+    <div id="result" class="result hidden">
+      <div class="url-display">
+        <span class="label">URL</span>
+        <span id="url" class="url"></span>
+      </div>
+
+      <div class="gauge-container">
+        <svg class="gauge" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="50" />
+          <circle id="gauge-fill" class="gauge-fill" cx="60" cy="60" r="50" />
+          <text id="gauge-text" x="60" y="55" class="gauge-value">0%</text>
+          <text id="gauge-label" x="60" y="72" class="gauge-label">Risk</text>
+        </svg>
+      </div>
+
+      <div id="risk-badge" class="risk-badge"></div>
+
+      <div class="details">
+        <div class="detail-row">
+          <span class="label">Prediction</span>
+          <span id="prediction" class="value"></span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Confidence</span>
+          <span id="confidence" class="value"></span>
+        </div>
+      </div>
+
+      <div class="probabilities">
+        <span class="label">Class Probabilities</span>
+        <div id="prob-bars" class="prob-bars"></div>
+      </div>
+    </div>
+
+    <div id="error" class="error hidden">
+      <span class="error-icon">⚠</span>
+      <span id="error-msg"></span>
+    </div>
+
+    <footer>
+      <button id="reanalyze" class="btn">Re-analyze</button>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

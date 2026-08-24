@@ -147,7 +147,7 @@ def create_model():
     print("\nCreating Logistic Regression...")
 
     return LogisticRegression(
-        max_iter=1000,
+        max_iter=2000,
         class_weight="balanced",
         C=4.0,
         solver="lbfgs",

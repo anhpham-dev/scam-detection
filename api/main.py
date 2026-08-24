@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 
-from schemas import PredictRequest, PredictResponse
-from predictor import predict_url
+from .schemas import PredictRequest, PredictResponse
+from .predictor import predict_url
 
 app = FastAPI(
     title="Scam Detection API",
@@ -29,8 +29,12 @@ def predict(request: PredictRequest):
         return result
 
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+
         raise HTTPException(
             status_code=500,
-            detail=f"Prediction failed: {str(e)}"
+            detail=f"{type(e).__name__}: str{e}"
         )
 

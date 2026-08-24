@@ -42,6 +42,8 @@ def predict_url(url: str) -> dict:
         "num_slashes",
         "num_hyphens",
         "num_underscores",
+        "num_digits",
+        "num_special_chars",
         "num_at",
         "num_question",
         "num_equal",
