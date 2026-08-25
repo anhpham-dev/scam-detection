@@ -1,4 +1,5 @@
 from pathlib import Path
+import csv
 import sys
 from urllib.parse import urlparse
 
@@ -15,36 +16,27 @@ from features import normalize_url, remove_scheme
 
 
 MODEL_DIR = ROOT_DIR / "models"
+TRUSTED_DOMAINS_PATH = ROOT_DIR / "data" / "trusted_domains.csv"
 MODEL_PATH = MODEL_DIR / "url_hybrid_v5_scheme_removed_classifier.pkl"
 VECTORIZER_PATH = MODEL_DIR / "url_hybrid_v5_scheme_removed_tfidf.pkl"
 SCALER_PATH = MODEL_DIR / "url_hybrid_v5_scheme_removed_scaler.pkl"
 
 SUSPICIOUS_THRESHOLD = 0.60
 MALICIOUS_THRESHOLD = 0.90
-TRUSTED_DOMAINS = {
-    "google.com",
-    "youtube.com",
-    "wikipedia.org",
-    "paypal.com",
-    "microsoft.com",
-    "apple.com",
-    "github.com",
-    "linkedin.com",
-    "amazon.com",
-    "facebook.com",
-    "reddit.com",
-    "stackoverflow.com",
-    "stackexchange.com",
-    "cnn.com",
-    "bbc.com",
-    "nytimes.com",
-    "dropbox.com",
-    "discord.com",
-    "zoom.us",
-    "openai.com",
-    "example.com",
-}
 TLD_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
+
+
+def load_trusted_domains() -> set[str]:
+    with TRUSTED_DOMAINS_PATH.open(newline="", encoding="utf-8") as file:
+        return {
+            row["domain"].strip().lower()
+            for row in csv.DictReader(file)
+            if row.get("domain", "").strip()
+            and not row["domain"].lstrip().startswith("#")
+        }
+
+
+TRUSTED_DOMAINS = load_trusted_domains()
 
 print("Loading V5 ML model...")
 model = joblib.load(MODEL_PATH)
