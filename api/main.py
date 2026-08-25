@@ -15,7 +15,7 @@ def root():
         "name": "Scam Detection API",
         "author": "github@anhpham-dev",
         "status": "online",
-        "model": "TF-IDF + V3"
+        "model": "V5 scheme-free TF-IDF + V4 domain features"
     }
 
 @app.get("/health")

@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import time
+import numpy as np
 
 import pandas as pd
 import joblib
@@ -151,13 +152,13 @@ def create_vectorizer():
 
     vectorizer = TfidfVectorizer(
         analyzer="char",
-        ngram_range=(2, 4), # char sequence
-        # max_features=500_000,
-        min_df=2, #ignore extremely rare one
+        ngram_range=(3, 5), # char sequence
+        max_features=500_000,
+        min_df=4, #ignore extremely rare one
         max_df=.95, # remove extremely common patterns
         sublinear_tf=True, # limit mem usage
         lowercase=True,
-        dtype="float32"
+        dtype=np.float32
         )
     return vectorizer
 

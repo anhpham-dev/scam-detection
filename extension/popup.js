@@ -1,33 +1,65 @@
 const $ = (id) => document.getElementById(id);
 
 const CLASS_COLORS = {
-  benign: "#35D07F",
-  malware: "#FF5C5C",
-  phishing: "#FFAD42",
-  defacement: "#A78BFA",
-  spam: "#5EA7FF",
+  benign: "#34d399",
+  malware: "#f87171",
+  phishing: "#fb923c",
+  defacement: "#c084fc",
+  spam: "#60a5fa",
 };
 
+const GAUGE_RADIUS = 52;
+const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
+
 function getClassColor(label) {
-  return CLASS_COLORS[label] || "#607D8B";
+  return CLASS_COLORS[label] || "#71717a";
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function lightenColor(hex, amount) {
+  amount = amount || 0.35;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const nr = Math.round(r + (255 - r) * amount);
+  const ng = Math.round(g + (255 - g) * amount);
+  const nb = Math.round(b + (255 - b) * amount);
+  return (
+    "#" +
+    nr.toString(16).padStart(2, "0") +
+    ng.toString(16).padStart(2, "0") +
+    nb.toString(16).padStart(2, "0")
+  );
 }
 
 function renderGauge(riskScore, color) {
-  const radius = 62;
-  const circumference = 2 * Math.PI * radius;
-
   const gauge = $("gauge-fill");
 
-  gauge.style.stroke = color;
+  // Update SVG gradient stops
+  const stop1 = $("grad-stop-1");
+  const stop2 = $("grad-stop-2");
+  if (stop1 && stop2) {
+    stop1.setAttribute("stop-color", color);
+    stop2.setAttribute("stop-color", lightenColor(color));
+  }
 
-  const offset =
-    circumference - (riskScore * circumference);
+  // Update glow filter color
+  gauge.style.filter =
+    "drop-shadow(0 0 5px " + hexToRgba(color, 0.35) + ")";
 
-  gauge.style.strokeDasharray = circumference;
+  const offset = GAUGE_CIRCUMFERENCE * (1 - riskScore);
+
+  gauge.style.strokeDasharray = GAUGE_CIRCUMFERENCE;
   gauge.style.strokeDashoffset = offset;
 
   $("gauge-text").textContent =
-    `${Math.round(riskScore * 100)}%`;
+    Math.round(riskScore * 100) + "%";
 }
 
 function renderBadge(riskLevel) {
@@ -39,14 +71,14 @@ function renderBadge(riskLevel) {
 
   span.textContent = riskLevel.label;
 
-  span.style.background = `${riskLevel.color}18`;
+  span.style.background = hexToRgba(riskLevel.color, 0.1);
   span.style.color = riskLevel.color;
-  span.style.border = `1px solid ${riskLevel.color}35`;
+  span.style.border =
+    "1px solid " + hexToRgba(riskLevel.color, 0.2);
 
   badge.appendChild(span);
 
-  $("risk-mini-label").textContent =
-    riskLevel.label;
+  $("risk-mini-label").textContent = riskLevel.label;
 }
 
 function renderProbabilities(probabilities) {
@@ -55,7 +87,7 @@ function renderProbabilities(probabilities) {
   container.innerHTML = "";
 
   const sorted = Object.entries(probabilities)
-    .sort((a, b) => b[1] - a[1]);
+    .sort(function (a, b) { return b[1] - a[1]; });
 
   for (const [label, value] of sorted) {
     const row = document.createElement("div");
@@ -73,14 +105,14 @@ function renderProbabilities(probabilities) {
 
     const percentage = Math.round(value * 100);
 
-    fill.style.width = `${percentage}%`;
+    fill.style.width = percentage + "%";
     fill.style.background = getClassColor(label);
 
     track.appendChild(fill);
 
     const percentageElement = document.createElement("span");
     percentageElement.className = "prob-value";
-    percentageElement.textContent = `${percentage}%`;
+    percentageElement.textContent = percentage + "%";
 
     row.appendChild(labelElement);
     row.appendChild(track);
@@ -103,19 +135,20 @@ function showResult(result) {
   $("error").classList.add("hidden");
   $("result").classList.remove("hidden");
 
+  // Re-trigger entrance animation
+  const resultEl = $("result");
+  resultEl.style.animation = "none";
+  resultEl.offsetHeight;
+  resultEl.style.animation = "";
+
   $("url").textContent = result.url;
 
-  $("prediction").textContent =
-    result.prediction;
+  $("prediction").textContent = result.prediction;
 
   $("confidence").textContent =
-    `${Math.round(result.confidence * 100)}%`;
+    Math.round(result.confidence * 100) + "%";
 
-  renderGauge(
-    result.riskScore,
-    result.riskLevel.color
-  );
-
+  renderGauge(result.riskScore, result.riskLevel.color);
   renderBadge(result.riskLevel);
 
   if (
@@ -137,11 +170,9 @@ function load() {
 
   chrome.runtime.sendMessage(
     { type: "getResult" },
-    (result) => {
+    function (result) {
       if (chrome.runtime.lastError) {
-        showError(
-          chrome.runtime.lastError.message
-        );
+        showError(chrome.runtime.lastError.message);
         return;
       }
 
@@ -152,11 +183,9 @@ function load() {
 
       chrome.runtime.sendMessage(
         { type: "analyze" },
-        (analysisResult) => {
+        function (analysisResult) {
           if (chrome.runtime.lastError) {
-            showError(
-              chrome.runtime.lastError.message
-            );
+            showError(chrome.runtime.lastError.message);
             return;
           }
 
@@ -175,16 +204,14 @@ function load() {
 
 $("reanalyze").addEventListener(
   "click",
-  () => {
+  function () {
     setLoading();
 
     chrome.runtime.sendMessage(
       { type: "analyze" },
-      (result) => {
+      function (result) {
         if (chrome.runtime.lastError) {
-          showError(
-            chrome.runtime.lastError.message
-          );
+          showError(chrome.runtime.lastError.message);
           return;
         }
 

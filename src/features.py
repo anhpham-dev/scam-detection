@@ -44,6 +44,28 @@ def normalize_url(url) -> str:
 
     return url
 
+def remove_scheme(url) -> str:
+    """Remove the URL scheme while preserving host, path, query, and fragment."""
+    url = normalize_url(url)
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return url
+
+    value = parsed.hostname or ""
+    try:
+        port = parsed.port
+    except ValueError:
+        port = None
+    if port is not None:
+        value += f":{port}"
+    value += parsed.path or ""
+    if parsed.query:
+        value += f"?{parsed.query}"
+    if parsed.fragment:
+        value += f"#{parsed.fragment}"
+    return value
+
 def has_ip_address(hostname):
     "Returns 1 if hostn is an IPv4 or IPv6 address. Otherwise 0"
     if not hostname:
@@ -162,7 +184,9 @@ FEATURE_GROUPS = {
 
 FEATURE_GROUPS["all"] = list(extract_features("http://x").keys())
 FEATURE_GROUPS["all_minus_redundant"] = [
-    col for col in FEATURE_GROUPS["all"] if col not in set(FEATURE_GROUPS["redundant"])
+    col
+    for col in FEATURE_GROUPS["all"]
+    if col not in set(FEATURE_GROUPS["redundant"]) and col != "has_https"
 ]
 
 def extract_feature_dataframe(urls, columns=None):

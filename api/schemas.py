@@ -7,3 +7,7 @@ class PredictResponse(BaseModel):
     prediction: str
     confidence: float
     probabilities: dict[str, float]
+    phishing_probability: float
+    risk: str
+    risk_level: str
+    trusted_domain: bool

@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import time
 
+import numpy as np
 import pandas as pd
 import joblib
 
@@ -133,13 +134,13 @@ def create_vectorizer():
 
     return TfidfVectorizer(
         analyzer="char",
-        ngram_range=(2,4),
-        # max_features=500_000,
-        min_df=2,
+        ngram_range=(3,5),
+        max_features=500_000,
+        min_df=4,
         max_df=.95,
         sublinear_tf=True,
         lowercase=True,
-        dtype="float32"
+        dtype=np.float32
     )
 
 # Model
