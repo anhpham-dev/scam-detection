@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scam Detector</title>
-  <link rel="stylesheet" href="popup.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scam Buzzer</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 
 <body>
   <main class="app">
 
-    <!-- Header -->
     <header class="header">
       <div class="brand">
         <div class="brand-icon">
@@ -32,40 +32,50 @@
         </div>
 
         <div>
-          <h1>Scam Detector</h1>
-          <span class="subtitle">ML-powered URL security</span>
+          <h1>Scam Buzzer</h1>
+          <span class="subtitle">Local URL risk scanner</span>
         </div>
       </div>
 
-      <div class="status">
-        <span class="status-dot"></span>
-        <span>Local</span>
+      <div class="header-actions">
+        <span id="status" class="status" title="Connection to the local API">
+          <span id="status-dot" class="status-dot"></span>
+          <span id="status-text">Checking…</span>
+        </span>
+
+        <button id="open-settings" class="icon-btn" aria-label="Settings"
+                title="Settings">
+          <svg viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="3.2"
+                    stroke="currentColor" stroke-width="1.8"/>
+            <path
+              d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.5-2-3.4-2.3 1a7.6 7.6 0 0 0-2.6-1.5L14.1 2h-4l-.4 2.6a7.6 7.6 0 0 0-2.6 1.5l-2.3-1-2 3.4 2 1.5a7.6 7.6 0 0 0 0 3l-2 1.5 2 3.4 2.3-1a7.6 7.6 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a7.6 7.6 0 0 0 2.6-1.5l2.3 1 2-3.4-2-1.5Z"
+              stroke="currentColor" stroke-width="1.8"
+              stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </header>
 
-    <!-- Loading -->
     <section id="loading" class="loading-state">
       <div class="spinner"></div>
       <p>Analyzing website...</p>
       <span>Checking URL characteristics</span>
     </section>
 
-    <!-- Result -->
-    <section id="result" class="result hidden">
+    <section id="result" class="result hidden" aria-live="polite">
 
-      <!-- URL -->
       <div class="url-card">
         <div class="section-label">
           <span class="label-icon">↗</span>
-          CURRENT URL
+          Current URL
         </div>
         <div id="url" class="url">—</div>
       </div>
 
-      <!-- Risk Score -->
       <div class="risk-card">
         <div class="risk-header">
-          <span class="section-label">RISK SCORE</span>
+          <span class="section-label">Risk score</span>
           <span id="risk-mini-label" class="risk-mini-label">—</span>
         </div>
 
@@ -78,27 +88,24 @@
                   x1="0%" y1="0%"
                   x2="100%" y2="0%"
                 >
-                  <stop
-                    offset="0%"
-                    id="grad-stop-1"
-                    stop-color="#34d399"
-                  />
-                  <stop
-                    offset="100%"
-                    id="grad-stop-2"
-                    stop-color="#a7f3d0"
-                  />
+                  <stop id="grad-stop-1" offset="0%" stop-color="#34d399" />
+                  <stop id="grad-stop-2" offset="100%" stop-color="#a7f3d0" />
                 </linearGradient>
               </defs>
 
               <circle
                 class="gauge-track"
-                cx="70" cy="70" r="52"
+                cx="70"
+                cy="70"
+                r="52"
               />
+
               <circle
                 id="gauge-fill"
                 class="gauge-progress"
-                cx="70" cy="70" r="52"
+                cx="70"
+                cy="70"
+                r="52"
                 stroke="url(#gaugeGrad)"
               />
             </svg>
@@ -115,48 +122,46 @@
         </div>
       </div>
 
-      <!-- Main stats -->
       <div class="stats">
         <div class="stat-card">
           <span class="stat-label">Prediction</span>
           <span id="prediction" class="stat-value">—</span>
         </div>
+
         <div class="stat-card">
           <span class="stat-label">Confidence</span>
           <span id="confidence" class="stat-value">—</span>
         </div>
       </div>
 
-      <!-- Probabilities -->
       <div class="probability-card">
         <div class="probability-header">
-          <div>
-            <span class="section-label">CLASS PROBABILITIES</span>
-            <p>Model classification breakdown</p>
-          </div>
+          <span class="section-label">Class probabilities</span>
+          <p>How the model split its confidence</p>
         </div>
+
         <div id="prob-bars" class="prob-bars"></div>
       </div>
 
     </section>
 
-    <!-- Error -->
     <section id="error" class="error-state hidden">
       <div class="error-icon">!</div>
       <h2>Analysis failed</h2>
+
       <p id="error-msg">
         Unable to connect to the local API.
       </p>
+
       <div class="error-hint">
-        Make sure your FastAPI server is running on
-        <code>localhost:8000</code>.
+        Start your FastAPI server, or check the API URL in
+        settings. Currently using <code id="error-api-url">localhost:8000</code>.
       </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
       <button id="reanalyze" class="reanalyze-btn">
-        <svg viewBox="0 0 24 24" fill="none">
+        <svg id="reanalyze-icon" viewBox="0 0 24 24" fill="none">
           <path
             d="M20 11A8.1 8.1 0 0 0 5.4 6.4L4 8"
             stroke="currentColor"
@@ -188,7 +193,8 @@
         </svg>
         Re-analyze
       </button>
-      <span class="version">v1.0.0</span>
+
+      <span id="version" class="version"></span>
     </footer>
 
   </main>

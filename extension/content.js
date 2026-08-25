@@ -1,48 +1,98 @@
-(() => {
-  const BANNER_ID = "scam-detector-warning";
+const ID = "scam-buzzer-warning";
 
-  function showWarning(riskLevel, prediction) {
-    if (document.getElementById(BANNER_ID)) return;
+function showWarning(level, prediction) {
+  if (document.getElementById(ID)) return;
 
-    const banner = document.createElement("div");
-    banner.id = BANNER_ID;
-    banner.style.cssText =
-      "position:fixed;top:0;left:0;right:0;z-index:2147483647;" +
-      "background:#18181b;color:#ededf0;padding:10px 16px;" +
-      "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,sans-serif;" +
-      "font-size:13px;display:flex;justify-content:space-between;align-items:center;" +
-      "border-bottom:1px solid #f87171;";
+  const box = document.createElement("div");
+  box.id = ID;
+  box.setAttribute("role", "alert");
 
-    banner.innerHTML =
-      '<span><strong style="color:#f87171">Warning:</strong> This page is flagged as <strong>' +
-      riskLevel +
-      '</strong> (' +
-      prediction +
-      ')</span>' +
-      '<button id="' +
-      BANNER_ID +
-      '-close" style="' +
-      'background:transparent;border:1px solid #3f3f46;color:#a1a1aa;' +
-      'padding:3px 10px;border-radius:5px;cursor:pointer;font-size:11px;' +
-      '">Dismiss</button>';
+  const text = document.createElement("span");
+  text.className = `${ID}-text`;
 
-    document.body.prepend(banner);
+  const strong = document.createElement("strong");
+  strong.textContent = "Warning: ";
+  strong.style.color = "#f87171";
 
-    document
-      .getElementById(BANNER_ID + "-close")
-      .addEventListener("click", function () {
-        banner.remove();
-      });
+  text.appendChild(strong);
+  text.append(
+    "This page was flagged as ",
+    makeBold(level),
+    ` (${prediction}). Be careful with links and forms here.`
+  );
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "Dismiss";
+
+  close.addEventListener("click", () => box.remove());
+
+  box.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2147483647;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #18181b;
+    color: #ededf0;
+    border-bottom: 1px solid rgba(248, 113, 113, .55);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+  `;
+
+  close.style.cssText = `
+    flex: 0 0 auto;
+    padding: 4px 12px;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    background: transparent;
+    color: #d4d4d8;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  `;
+
+  close.addEventListener("mouseover", () => {
+    close.style.background = "#27272a";
+    close.style.color = "#fff";
+  });
+
+  close.addEventListener("mouseout", () => {
+    close.style.background = "transparent";
+    close.style.color = "#d4d4d8";
+  });
+
+  box.append(text, close);
+  document.body.prepend(box);
+
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    box.animate(
+      [
+        { transform: "translateY(-100%)" },
+        { transform: "translateY(0)" }
+      ],
+      { duration: 220, easing: "ease-out" }
+    );
   }
+}
 
-  chrome.runtime.sendMessage({
-    type: "contentLoaded",
-    tabId: chrome.runtime.id ? null : undefined,
-  });
+function makeBold(value) {
+  const el = document.createElement("strong");
+  el.textContent = value || "";
+  return el;
+}
 
-  chrome.runtime.onMessage.addListener(function (msg) {
-    if (msg.type === "showWarning") {
-      showWarning(msg.riskLevel, msg.prediction);
-    }
-  });
-})();
+chrome.runtime.onMessage.addListener(message => {
+  if (message.type === "showWarning") {
+    showWarning(
+      message.riskLevel,
+      message.prediction
+    );
+  }
+});

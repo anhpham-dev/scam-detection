@@ -3,60 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="popup.css">
+  <title>Scam Buzzer Settings</title>
+  <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Scam Detector</h1>
+  <main class="settings-shell">
+    <header class="settings-header">
+      <div class="brand-mark">SB</div>
+      <div>
+        <p class="eyebrow">SCAM BUZZER</p>
+        <h1>Settings</h1>
+        <p class="intro">Tune how the local detector connects and alerts you.</p>
+      </div>
     </header>
 
-    <div id="loading" class="loading">Analyzing URL...</div>
-
-    <div id="result" class="result hidden">
-      <div class="url-display">
-        <span class="label">URL</span>
-        <span id="url" class="url"></span>
-      </div>
-
-      <div class="gauge-container">
-        <svg class="gauge" viewBox="0 0 120 120">
-          <circle class="gauge-bg" cx="60" cy="60" r="50" />
-          <circle id="gauge-fill" class="gauge-fill" cx="60" cy="60" r="50" />
-          <text id="gauge-text" x="60" y="55" class="gauge-value">0%</text>
-          <text id="gauge-label" x="60" y="72" class="gauge-label">Risk</text>
-        </svg>
-      </div>
-
-      <div id="risk-badge" class="risk-badge"></div>
-
-      <div class="details">
-        <div class="detail-row">
-          <span class="label">Prediction</span>
-          <span id="prediction" class="value"></span>
+    <form id="settings-form" novalidate>
+      <section class="settings-section">
+        <p class="section-kicker">Connection</p>
+        <label class="field" for="api-base-url">
+          <span>Local API URL</span>
+          <small>Base address of your FastAPI server. Example: http://localhost:8000</small>
+          <input id="api-base-url" name="apiBaseUrl" type="url" autocomplete="url" required>
+          <em id="url-error" class="field-error"></em>
+        </label>
+        <div class="connection-row">
+          <button type="button" id="test-connection" class="secondary-btn">
+            Test connection
+          </button>
+          <span id="connection-status" class="connection-status" role="status"></span>
         </div>
-        <div class="detail-row">
-          <span class="label">Confidence</span>
-          <span id="confidence" class="value"></span>
-        </div>
+      </section>
+
+      <section class="settings-section">
+        <p class="section-kicker">Detection</p>
+        <label class="field" for="high-risk-threshold">
+          <span>High-risk bias <output id="threshold-value" for="high-risk-threshold">70%</output></span>
+          <small>Show a high-risk alert when the calculated risk reaches this level.</small>
+          <input id="high-risk-threshold" name="highRiskThreshold" type="range" min="0.5" max="0.95" step="0.05">
+        </label>
+      </section>
+
+      <section class="settings-section">
+        <p class="section-kicker">Behavior</p>
+        <label class="toggle-row" for="show-high-risk-banner">
+          <span><strong>Show high-risk banner</strong><small>Display an alert at the top of flagged pages.</small></span>
+          <input id="show-high-risk-banner" name="showHighRiskBanner" type="checkbox">
+          <span class="switch" aria-hidden="true"></span>
+        </label>
+        <label class="toggle-row" for="auto-analyze">
+          <span><strong>Analyze pages automatically</strong><small>Check each page after it finishes loading.</small></span>
+          <input id="auto-analyze" name="autoAnalyze" type="checkbox">
+          <span class="switch" aria-hidden="true"></span>
+        </label>
+      </section>
+
+      <div class="actions">
+        <span id="save-status" role="status"></span>
+        <button type="button" id="reset-defaults" class="secondary-btn">
+          Reset to defaults
+        </button>
+        <button type="submit">Save settings</button>
       </div>
-
-      <div class="probabilities">
-        <span class="label">Class Probabilities</span>
-        <div id="prob-bars" class="prob-bars"></div>
-      </div>
-    </div>
-
-    <div id="error" class="error hidden">
-      <span class="error-icon">⚠</span>
-      <span id="error-msg"></span>
-    </div>
-
-    <footer>
-      <button id="reanalyze" class="btn">Re-analyze</button>
-    </footer>
-  </div>
-
-  <script src="popup.js"></script>
+    </form>
+  </main>
+  <script src="options.js"></script>
 </body>
 </html>

@@ -1,230 +1,250 @@
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
-const CLASS_COLORS = {
+const colors = {
   benign: "#34d399",
   malware: "#f87171",
   phishing: "#fb923c",
   defacement: "#c084fc",
-  spam: "#60a5fa",
+  spam: "#60a5fa"
 };
 
-const GAUGE_RADIUS = 52;
-const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
+const radius = 52;
+const circumference = 2 * Math.PI * radius;
 
-function getClassColor(label) {
-  return CLASS_COLORS[label] || "#71717a";
+function colorFor(label) {
+  return colors[label] || "#71717a";
 }
 
-function hexToRgba(hex, alpha) {
+function prettyLabel(label) {
+  if (!label) return "—";
+  const text = String(label);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function rgba(hex, alpha) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
+
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function lightenColor(hex, amount) {
-  amount = amount || 0.35;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const nr = Math.round(r + (255 - r) * amount);
-  const ng = Math.round(g + (255 - g) * amount);
-  const nb = Math.round(b + (255 - b) * amount);
-  return (
-    "#" +
-    nr.toString(16).padStart(2, "0") +
-    ng.toString(16).padStart(2, "0") +
-    nb.toString(16).padStart(2, "0")
-  );
+function renderUrl(raw) {
+  const el = $("url");
+  el.replaceChildren();
+
+  try {
+    const parsed = new URL(raw);
+    const host = document.createElement("span");
+    host.className = "url-host";
+    host.textContent = parsed.hostname;
+
+    const rest = document.createElement("span");
+    rest.textContent =
+      parsed.pathname + parsed.search;
+
+    el.append(host, rest);
+  } catch {
+    el.textContent = raw;
+  }
 }
 
-function renderGauge(riskScore, color) {
+function renderGauge(score, color) {
   const gauge = $("gauge-fill");
 
-  // Update SVG gradient stops
-  const stop1 = $("grad-stop-1");
-  const stop2 = $("grad-stop-2");
-  if (stop1 && stop2) {
-    stop1.setAttribute("stop-color", color);
-    stop2.setAttribute("stop-color", lightenColor(color));
-  }
+  gauge.style.strokeDasharray = circumference;
+  gauge.style.strokeDashoffset =
+    circumference * (1 - score);
 
-  // Update glow filter color
-  gauge.style.filter =
-    "drop-shadow(0 0 5px " + hexToRgba(color, 0.35) + ")";
-
-  const offset = GAUGE_CIRCUMFERENCE * (1 - riskScore);
-
-  gauge.style.strokeDasharray = GAUGE_CIRCUMFERENCE;
-  gauge.style.strokeDashoffset = offset;
+  $("grad-stop-1").setAttribute("stop-color", color);
+  $("grad-stop-2").setAttribute("stop-color", color);
+  $("grad-stop-2").setAttribute("stop-opacity", "0.45");
 
   $("gauge-text").textContent =
-    Math.round(riskScore * 100) + "%";
-}
-
-function renderBadge(riskLevel) {
-  const badge = $("risk-badge");
-
-  badge.innerHTML = "";
-
-  const span = document.createElement("span");
-
-  span.textContent = riskLevel.label;
-
-  span.style.background = hexToRgba(riskLevel.color, 0.1);
-  span.style.color = riskLevel.color;
-  span.style.border =
-    "1px solid " + hexToRgba(riskLevel.color, 0.2);
-
-  badge.appendChild(span);
-
-  $("risk-mini-label").textContent = riskLevel.label;
+    Math.round(score * 100) + "%";
 }
 
 function renderProbabilities(probabilities) {
   const container = $("prob-bars");
+  container.replaceChildren();
 
-  container.innerHTML = "";
+  Object.entries(probabilities)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([label, value]) => {
+      const percent = Math.round(value * 100);
+      const color = colorFor(label);
 
-  const sorted = Object.entries(probabilities)
-    .sort(function (a, b) { return b[1] - a[1]; });
+      const row = document.createElement("div");
+      row.className = "prob-row";
 
-  for (const [label, value] of sorted) {
-    const row = document.createElement("div");
-    row.className = "prob-row";
+      const name = document.createElement("span");
+      name.className = "prob-label";
+      name.textContent = prettyLabel(label);
 
-    const labelElement = document.createElement("span");
-    labelElement.className = "prob-label";
-    labelElement.textContent = label;
+      const track = document.createElement("div");
+      track.className = "prob-bar-track";
 
-    const track = document.createElement("div");
-    track.className = "prob-bar-track";
+      const fill = document.createElement("div");
+      fill.className = "prob-bar-fill";
+      fill.style.width = percent + "%";
+      fill.style.background = color;
 
-    const fill = document.createElement("div");
-    fill.className = "prob-bar-fill";
+      track.appendChild(fill);
 
-    const percentage = Math.round(value * 100);
+      const num = document.createElement("span");
+      num.className = "prob-value";
+      num.textContent = percent + "%";
 
-    fill.style.width = percentage + "%";
-    fill.style.background = getClassColor(label);
-
-    track.appendChild(fill);
-
-    const percentageElement = document.createElement("span");
-    percentageElement.className = "prob-value";
-    percentageElement.textContent = percentage + "%";
-
-    row.appendChild(labelElement);
-    row.appendChild(track);
-    row.appendChild(percentageElement);
-
-    container.appendChild(row);
-  }
+      row.append(name, track, num);
+      container.appendChild(row);
+    });
 }
 
-function showError(message) {
-  $("loading").classList.add("hidden");
-  $("result").classList.add("hidden");
-  $("error").classList.remove("hidden");
-
-  $("error-msg").textContent = message;
-}
-
-function showResult(result) {
+function renderResult(data) {
   $("loading").classList.add("hidden");
   $("error").classList.add("hidden");
   $("result").classList.remove("hidden");
+  setBusy(false);
 
-  // Re-trigger entrance animation
-  const resultEl = $("result");
-  resultEl.style.animation = "none";
-  resultEl.offsetHeight;
-  resultEl.style.animation = "";
-
-  $("url").textContent = result.url;
-
-  $("prediction").textContent = result.prediction;
-
+  renderUrl(data.url);
+  $("prediction").textContent =
+    prettyLabel(data.prediction);
   $("confidence").textContent =
-    Math.round(result.confidence * 100) + "%";
+    Math.round((data.confidence || 0) * 100) + "%";
 
-  renderGauge(result.riskScore, result.riskLevel.color);
-  renderBadge(result.riskLevel);
+  renderGauge(
+    data.riskScore,
+    data.riskLevel.color
+  );
+
+  const badge = document.createElement("span");
+
+  badge.textContent = data.riskLevel.label;
+  badge.style.color = data.riskLevel.color;
+  badge.style.background =
+    rgba(data.riskLevel.color, 0.1);
+
+  $("risk-badge").replaceChildren(badge);
+  $("risk-mini-label").textContent =
+    data.riskLevel.label;
 
   if (
-    result.probabilities &&
-    Object.keys(result.probabilities).length
+    data.probabilities &&
+    Object.keys(data.probabilities).length
   ) {
-    renderProbabilities(result.probabilities);
+    renderProbabilities(data.probabilities);
+  } else {
+    $("prob-bars").replaceChildren();
   }
 }
 
-function setLoading() {
+function showError(message, apiUrl) {
+  $("loading").classList.add("hidden");
+  $("result").classList.add("hidden");
+  $("error").classList.remove("hidden");
+  setBusy(false);
+
+  $("error-msg").textContent = message;
+
+  if (apiUrl) {
+    $("error-api-url").textContent =
+      apiUrl.replace(/^https?:\/\//, "");
+  }
+}
+
+function loading() {
   $("loading").classList.remove("hidden");
   $("result").classList.add("hidden");
   $("error").classList.add("hidden");
 }
 
-function load() {
-  setLoading();
+function setBusy(busy) {
+  const app = document.querySelector(".app");
+  const btn = $("reanalyze");
+
+  app.classList.toggle("busy", busy);
+  btn.disabled = busy;
+  $("reanalyze-icon").classList.toggle(
+    "spinning",
+    busy
+  );
+}
+
+function analyze(soft) {
+  setBusy(true);
+
+  if (!soft) loading();
 
   chrome.runtime.sendMessage(
-    { type: "getResult" },
-    function (result) {
+    { type: "analyze" },
+    result => {
+      setBusy(false);
+
       if (chrome.runtime.lastError) {
         showError(chrome.runtime.lastError.message);
         return;
       }
 
-      if (result) {
-        showResult(result);
-        return;
+      if (result && !result.error) {
+        renderResult(result);
+      } else if (result) {
+        showError(
+          result.error || "Analysis failed.",
+          result.apiUrl
+        );
+      } else {
+        showError("Analysis failed.");
       }
+    }
+  );
+}
 
-      chrome.runtime.sendMessage(
-        { type: "analyze" },
-        function (analysisResult) {
-          if (chrome.runtime.lastError) {
-            showError(chrome.runtime.lastError.message);
-            return;
-          }
+function load() {
+  chrome.runtime.sendMessage(
+    { type: "getResult" },
+    result => {
+      if (result && !result.error) {
+        renderResult(result);
+      } else {
+        analyze(false);
+      }
+    }
+  );
+}
 
-          if (analysisResult) {
-            showResult(analysisResult);
-          } else {
-            showError(
-              "No result. Is the API server running?"
-            );
-          }
-        }
+function checkStatus() {
+  chrome.runtime.sendMessage(
+    { type: "ping" },
+    state => {
+      const online = state && state.online;
+
+      $("status-text").textContent = online
+        ? "Connected"
+        : "Offline";
+
+      $("status-dot").classList.toggle(
+        "offline",
+        !online
       );
+      $("status").title = online
+        ? `Local API at ${state.url}`
+        : `No response from ${state ? state.url : "the local API"}`;
     }
   );
 }
 
 $("reanalyze").addEventListener(
   "click",
-  function () {
-    setLoading();
-
-    chrome.runtime.sendMessage(
-      { type: "analyze" },
-      function (result) {
-        if (chrome.runtime.lastError) {
-          showError(chrome.runtime.lastError.message);
-          return;
-        }
-
-        if (result) {
-          showResult(result);
-        } else {
-          showError(
-            "Analysis failed. Check the API server."
-          );
-        }
-      }
-    );
-  }
+  () => analyze(true)
 );
 
+$("open-settings").addEventListener(
+  "click",
+  () => chrome.runtime.openOptionsPage()
+);
+
+$("version").textContent =
+  "v" + chrome.runtime.getManifest().version;
+
+checkStatus();
 load();
