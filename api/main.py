@@ -35,6 +35,6 @@ def predict(request: PredictRequest):
 
         raise HTTPException(
             status_code=500,
-            detail=f"{type(e).__name__}: str{e}"
+            detail=f"{type(e).__name__}: {e}"
         )
 

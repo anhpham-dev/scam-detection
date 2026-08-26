@@ -25,8 +25,15 @@ from features import (
 # CONFIG
 # ============================================================
 
-DATASET_DIR = Path(
-    r"C:\Users\Quoc Anh\.cache\kagglehub\datasets\sid321axn\malicious-urls-dataset\versions\1"
+DATASET_DIR = (
+    Path.home()
+    / ".cache"
+    / "kagglehub"
+    / "datasets"
+    / "sid321axn"
+    / "malicious-urls-dataset"
+    / "versions"
+    / "1"
 )
 
 MODEL_PATH = (

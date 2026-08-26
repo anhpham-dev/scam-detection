@@ -45,7 +45,7 @@ def find_csv():
     csv_files = list(DATASET_DIR.glob("*.csv"))
 
     if not csv_files:
-        raise FileNotFoundError(f"No CSV file found in: \{DATASET_DIR}")
+        raise FileNotFoundError(f"No CSV file found in: {DATASET_DIR}")
 
     print("\nCSV file found:")
     for file in csv_files:

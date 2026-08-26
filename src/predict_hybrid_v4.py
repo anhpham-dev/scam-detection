@@ -6,9 +6,8 @@ import numpy as np
 from scipy.sparse import csr_matrix, hstack
 import tldextract
 
-from features import extract_feature_dataframe, remove_scheme
+from features import extract_feature_dataframe, normalize_url, remove_scheme
 from domain_features import extract_domain_feature_dataframe
-from features import normalize_url
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -55,121 +54,10 @@ def get_registered_domain(url):
     return result.domain or hostname
 
 
-print("Loading TF-IDF vectorizer...")
+print("Loading model artifacts...")
 vectorizer = joblib.load(VECTORIZER_PATH)
-
-print("Loading scaler...")
 scaler = joblib.load(SCALER_PATH)
-
-print("Loading classifier...")
 model = joblib.load(MODEL_PATH)
-
-print("Model loaded.")
-
-print("\n=== HAS_HTTPS COEFFICIENT ===")
-
-if "has_https" in scaler.feature_names_in_:
-    feature_names = list(scaler.feature_names_in_)
-    https_index = feature_names.index("has_https")
-    tfidf_size = len(vectorizer.vocabulary_)
-    model_index = tfidf_size + https_index
-
-    print("TF-IDF size:", tfidf_size)
-    print("has_https feature index:", model_index)
-
-    for class_name, coefficient in zip(
-        model.classes_,
-        model.coef_[:, model_index]
-    ):
-        print(
-            f"{class_name:<12}: "
-            f"{coefficient:.6f}"
-        )
-else:
-    print("has_https is excluded from the handcrafted features.")
-
-
-print("\nClassifier classes:")
-print(model.classes_)
-
-print("\nModel information:")
-print("Model:", type(model).__name__)
-print("TF-IDF vocabulary:", len(vectorizer.vocabulary_))
-print("Model features:", model.n_features_in_)
-print("Scaler features:", scaler.n_features_in_)
-
-if hasattr(scaler, "feature_names_in_"):
-    print("\nScaler feature names:")
-    print(list(scaler.feature_names_in_))
-
-
-def explain_tfidf(url, top_n=30):
-    url = normalize_url(url)
-
-    x = vectorizer.transform([remove_scheme(url)])
-
-    print("\n========================================")
-    print("TF-IDF EXPLANATION")
-    print("========================================")
-    print("URL:", url)
-    print("Active features:", x.nnz)
-
-    feature_names = vectorizer.get_feature_names_out()
-
-    # Phishing class index
-    phishing_index = list(model.classes_).index("phishing")
-
-    # Logistic regression coefficients for phishing
-    coefficients = model.coef_[phishing_index]
-
-    # Only active TF-IDF features
-    active_indices = x.indices
-    active_values = x.data
-
-    contributions = []
-
-    for index, value in zip(active_indices, active_values):
-        contribution = value * coefficients[index]
-
-        contributions.append(
-            (
-                feature_names[index],
-                float(value),
-                float(coefficients[index]),
-                float(contribution),
-            )
-        )
-
-    # Largest positive contributions toward phishing
-    contributions.sort(
-        key=lambda x: x[3],
-        reverse=True
-    )
-
-    print("\nTop features pushing toward PHISHING:")
-
-    for feature, tfidf, coefficient, contribution in contributions[:top_n]:
-        print(
-            f"{feature!r:<15} "
-            f"tfidf={tfidf:.6f} "
-            f"coef={coefficient:+.6f} "
-            f"contribution={contribution:+.6f}"
-        )
-
-    print("\nTop features pushing AWAY from PHISHING:")
-
-    negative = sorted(
-        contributions,
-        key=lambda x: x[3]
-    )
-
-    for feature, tfidf, coefficient, contribution in negative[:top_n]:
-        print(
-            f"{feature!r:<15} "
-            f"tfidf={tfidf:.6f} "
-            f"coef={coefficient:+.6f} "
-            f"contribution={contribution:+.6f}"
-        )
 
 
 def predict_url(url: str) -> dict:
@@ -239,25 +127,6 @@ def predict_url(url: str) -> dict:
             list(scaler.feature_names_in_)
         ]
 
-    print("\n=== DEBUG FEATURES ===")
-    print("URL:", url)
-
-    print("\nRaw features:")
-    print(features.to_dict(orient="records")[0])
-
-    print("\nScaled features:")
-    scaled = scaler.transform(features)
-
-    for name, value in zip(
-        scaler.feature_names_in_,
-        scaled[0]
-    ):
-        print(f"{name:<30} {value: .4f}")
-
-    # --------------------------------------------------------
-    # Scale
-    # --------------------------------------------------------
-
     x_features = csr_matrix(
         scaler.transform(features).astype("float32")
     )
@@ -312,12 +181,6 @@ def predict_url(url: str) -> dict:
         "risk_level": risk_level,
         "trusted_domain": False,
     }
-
-# if __name__ == "__main__":
-#     explain_tfidf("https://google.com")
-#     explain_tfidf("https://example.com")
-#     explain_tfidf("https://wikipedia.org")
-#     explain_tfidf("https://youtube.com")
 
 if __name__ == "__main__":
 

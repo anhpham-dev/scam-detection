@@ -142,7 +142,7 @@ def sample_dataset(df):
     df = df.sample(n=MAX_ROWS, random_state=RANDOM_STATE, stratify=df["type"])
 
     print("\nSampled class distribution:")
-    print(df["type".value_counts()])
+    print(df["type"].value_counts())
 
     return df
 
